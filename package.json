@@ -9,9 +9,14 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
-    "lint": "eslint --ext .ts,.tsx ."
+    "lint": "eslint --ext .ts,.tsx .",
+    "repomix": "repomix"
   },
-  "keywords": ["doom", "retro games", "wad"],
+  "keywords": [
+    "doom",
+    "retro games",
+    "wad"
+  ],
   "author": {
     "name": "Philipp Rich",
     "email": "skorphil@gmail.com"
@@ -25,6 +30,7 @@
   },
   "packageManager": "pnpm@10.6.1+sha512.40ee09af407fa9fbb5fbfb8e1cb40fbb74c0af0c3e10e9224d7b53c7658528615b2c92450e74cfad91e3a2dcafe3ce4050d80bda71d757756d2ce2b66213e9a3",
   "devDependencies": {
+    "@biomejs/biome": "2.3.8",
     "@electron-forge/cli": "^7.10.2",
     "@electron-forge/maker-deb": "^7.10.2",
     "@electron-forge/maker-rpm": "^7.10.2",
@@ -34,8 +40,10 @@
     "@electron-forge/plugin-fuses": "^7.10.2",
     "@electron-forge/plugin-webpack": "^7.10.2",
     "@electron/fuses": "^1.0.0",
+    "@types/extract-zip": "^2.0.3",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "@types/unzipper": "^0.10.11",
     "@typescript-eslint/eslint-plugin": "^5.0.0",
     "@typescript-eslint/parser": "^5.0.0",
     "@vercel/webpack-asset-relocator-loader": "1.7.3",
@@ -46,16 +54,19 @@
     "fork-ts-checker-webpack-plugin": "^7.2.13",
     "node-loader": "^2.0.0",
     "postcss-loader": "^8.2.0",
+    "repomix": "^1.10.1",
     "style-loader": "^3.0.0",
     "ts-loader": "^9.2.2",
-    "typescript": "~4.5.4"
+    "typescript": "^4.9.5"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.17",
     "electron-squirrel-startup": "^1.0.1",
+    "extract-zip": "^2.0.1",
     "postcss": "^8.5.6",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
-    "tailwindcss": "^4.1.17"
+    "tailwindcss": "^4.1.17",
+    "unzipper": "^0.12.3"
   }
 }

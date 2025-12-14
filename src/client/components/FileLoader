@@ -1,0 +1,102 @@
+import React, { useEffect, useState } from "react";
+
+const FileLoader: React.FC = () => {
+	const [downloading, setDownloading] = useState(false);
+	const [progress, setProgress] = useState(0);
+	const [statusMessage, setStatusMessage] = useState("");
+	const [error, setError] = useState<string | null>(null);
+
+	useEffect(() => {
+		// Set up progress listener
+		const unsubscribeProgress = window.electron.onDownloadProgress(
+			(progress: number) => {
+				setProgress(progress);
+				setStatusMessage(`Downloading... ${progress}%`);
+			},
+		);
+
+		// Set up status listener
+		const unsubscribeStatus = window.electron.onDownloadStatus(
+			(status: string) => {
+				// Handle different status messages
+				if (status === "complete") {
+					setDownloading(false);
+					setStatusMessage("Download complete!");
+				} else if (status.startsWith("error:")) {
+					setDownloading(false);
+					setError(status.substring(6)); // Remove 'error:' prefix
+				} else {
+					setStatusMessage(status);
+				}
+			},
+		);
+
+		// Clean up listeners
+		return () => {
+			unsubscribeProgress();
+			unsubscribeStatus();
+		};
+	}, []);
+
+	const handleInstallClick = async () => {
+		setDownloading(true);
+		setProgress(0);
+		setStatusMessage("Starting download...");
+		setError(null);
+
+		try {
+			// Call the download function with a specific source port name
+			// For now, we'll use 'uzdoom' as an example
+			await window.electron.downloadSourcePort("uzdoom");
+		} catch (err) {
+			setDownloading(false);
+			setError(err instanceof Error ? err.message : "Unknown error occurred");
+		}
+	};
+
+	return (
+		<div className="file-loader w-full">
+			{error ? (
+				<div className="error">
+					<p className="text-red-500 mb-2">Error: {error}</p>
+					<button
+						onClick={() => setError(null)}
+						className={
+							"text-2xl grow-0 w-fit font-bold p-4 bg-neutral-100 text-neutral-950"
+						}
+					>
+						Dismiss
+					</button>
+				</div>
+			) : (
+				<>
+					{statusMessage && (
+						<div className="status mb-2 text-lg">{statusMessage}</div>
+					)}
+					{downloading && (
+						<div className="progress-container mb-4">
+							<div className="progress-bar w-full h-6 bg-gray-200 rounded overflow-hidden">
+								<div
+									className="progress-fill h-full bg-blue-500 transition-all duration-300"
+									style={{ width: `${progress}%` }}
+								></div>
+							</div>
+							<div className="progress-text mt-1">{progress}%</div>
+						</div>
+					)}
+					<button
+						onClick={handleInstallClick}
+						disabled={downloading}
+						className={
+							"text-2xl grow-0 w-fit font-bold p-4 bg-neutral-100 text-neutral-950 disabled:opacity-50"
+						}
+					>
+						{downloading ? "Downloading..." : "Download"}
+					</button>
+				</>
+			)}
+		</div>
+	);
+};
+
+export default FileLoader;
