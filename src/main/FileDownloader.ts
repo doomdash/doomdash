@@ -1,5 +1,6 @@
 import https from "node:https";
 import { app, type BrowserWindow } from "electron";
+import log from "electron-log/main";
 import fs from "fs";
 import path from "path";
 import unzipper from "unzipper";
@@ -46,7 +47,9 @@ export class FileDownloader {
 			const dest = `${app.getPath("desktop")}/${this.config.dataFolderName}/`;
 			const tempDirectory = path.join(app.getPath("temp"), filename);
 			console.log("tempDir", tempDirectory);
+			log.info(`tempDir ${tempDirectory}`);
 			console.log("directory", dest);
+			log.info(`directory ${dest}`);
 			// 1. Check if destination directory exists. If not, create it.
 			if (!fs.existsSync(dest)) {
 				try {
@@ -89,6 +92,7 @@ export class FileDownloader {
 					10,
 				);
 				console.log("totalSize", totalSize);
+
 				let downloadedSize = 0;
 
 				response.pipe(file);
