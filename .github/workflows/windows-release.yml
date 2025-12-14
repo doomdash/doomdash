@@ -1,16 +1,13 @@
-name: 🖥️ Windows Electron Build
+name: 🖥️ Windows Electron Build (using pnpm)
 
 on:
-  # Triggers the workflow when you push a new tag (e.g., v1.0.0)
   push:
     branches:
       - 'prototype'
-  # Allows manual runs from the GitHub UI
   workflow_dispatch:
 
 jobs:
   build_windows:
-    # --- 1. Use the Windows Runner ---
     runs-on: windows-latest
     
     steps:
@@ -20,47 +17,27 @@ jobs:
       - name: 2. ⚙️ Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24 # Use a stable LTS version
+          node-version: 20 # Switched back to 20, as it's the current LTS (LTS is generally safer for production builds)
 
-      - name: 3. 📦 Install Dependencies
-        # 'npm ci' ensures a clean, consistent install in CI
-        run: npm ci
+      - name: 3. 🛠️ Install pnpm
+        # We must explicitly install pnpm globally on the runner before we can use it
+        run: npm install -g pnpm
 
-      - name: 4. 🔨 Run Electron Forge 'make' for Windows
-        # Since this is running on 'windows-latest', running 'npm run make'
-        # will automatically target 'win32' platforms configured in your forge config.
-        run: npm run make
+      - name: 4. 📦 Install Dependencies (pnpm)
+        # --frozen-lockfile is the CI-recommended way to ensure dependency integrity
+        run: pnpm install --frozen-lockfile
 
-      # --- 5. Uploading the Artifacts ---
-      - name: 5. ⬆️ Upload Windows Artifacts
+      - name: 5. 🔨 Run Electron Forge 'make' (pnpm)
+        # Executes the 'make' script defined in package.json using pnpm
+        run: pnpm run make
+
+      # --- 6. Uploading the Artifacts ---
+      - name: 6. ⬆️ Upload Windows Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Windows-Installer-Files
-          # Electron Forge output path
           path: out/make/
           retention-days: 30
           
-  # --- 6. Creating the Release ---
-  # create_release:
-  #   name: 📝 Create GitHub Release
-  #   needs: build_windows
-  #   runs-on: ubuntu-latest # A fast, cheap runner for the release task
-    
-  #   steps:
-  #     - name: 1. ⬇️ Download Windows Artifacts
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: Windows-Installer-Files
-  #         path: artifacts/
-
-  #     - name: 2. 🏷️ Get Tag Name
-  #       id: get_version
-  #       run: echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-
-  #     - name: 3. 🚀 Create GitHub Release & Attach Assets
-  #       uses: softprops/action-gh-release@v2
-  #       with:
-  #         tag_name: ${{ steps.get_version.outputs.TAG_NAME }}
-  #         draft: true # Creates a draft release for you to review first
-  #         # Attach all files downloaded from the 'out/make/' folder
-  #         files: artifacts/**/
+  # The 'create_release' job is currently commented out, 
+  # but your setup is otherwise correct for a 'prototype' branch build.
