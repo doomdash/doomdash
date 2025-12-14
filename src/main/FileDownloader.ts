@@ -3,6 +3,7 @@ import { app, type BrowserWindow } from "electron";
 import fs from "fs";
 import path from "path";
 import unzipper from "unzipper";
+import { extract } from "zip-lib";
 
 const defaultConfig = {
 	channelName: "download-status-2",
@@ -182,22 +183,17 @@ export function unzipFile(src: string, dest: string): Promise<void> {
 	const srcPath = path.resolve(src);
 	const destPath = path.resolve(dest);
 
-	// Ensure the destination directory exists before extraction
-	if (!fs.existsSync(destPath)) {
-		fs.mkdirSync(destPath, { recursive: true });
-	}
-
-	return new Promise((resolve, reject) => {
-		fs.createReadStream(srcPath)
-			.pipe(unzipper.Extract({ path: destPath })) // Use unzipper.Extract
-			.on("finish", () => {
-				resolve();
-			})
-			.on("error", (err) => {
-				reject(
-					new Error(`ZIP extraction failed for ${srcPath}: ${err.message}`),
-				);
-			});
+	// The extract function from zip-lib handles everything:
+	// - It is Promise-based (asynchronous).
+	// - It automatically handles directory creation.
+	// - It leverages yauzl internally for robust, stream-based extraction.
+	return extract(srcPath, destPath).catch((err) => {
+		// Catch any errors during the async extraction process
+		return Promise.reject(
+			new Error(
+				`ZIP extraction failed for ${srcPath} using zip-lib: ${err instanceof Error ? err.message : String(err)}`,
+			),
+		);
 	});
 }
 
