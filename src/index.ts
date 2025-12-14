@@ -197,10 +197,7 @@ switch (systemOs) {
 	case "win32": {
 		uzdoomUrl =
 			"https://github.com/UZDoom/UZDoom/releases/download/4.14.3/Windows-UZDoom-4.14.3.zip";
-		uzdoomPath = path.join(
-			app.getPath("desktop"),
-			"doomdash-data/Windows-UZDoom-4.14.3/uzdoom.exe",
-		);
+		uzdoomPath = path.join(app.getPath("desktop"), "doomdash-data/uzdoom.exe");
 		break;
 	}
 }
