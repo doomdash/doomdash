@@ -1,0 +1,38 @@
+/* ---------------------------------------------------- */
+/* 1. Define the Keyframes for BACKGROUND POSITION */
+/* ---------------------------------------------------- */
+@keyframes slide-left {
+	/* We calculate the start position based on the image width */
+	from {
+		background-position-x: 0;
+	}
+	/* Move the background position left by the EXACT width of the image.
+       If your image is 4000px wide, you would use -4000px here.
+       Since we need the browser to calculate the SCALED width, using 100% 
+       is the best way to define the distance for a clean loop. */
+	to {
+		background-position-x: 100%; /* Move left by one full scaled image width */
+	}
+}
+
+/* ---------------------------------------------------- */
+/* 2. Define the Single Background Element Class */
+/* ---------------------------------------------------- */
+.scrollingBg {
+	width: 100%;
+	height: 100%; /* Takes the height of the fixed viewport (e.g., 200px) */
+
+	background-image: url("sky-2.png");
+
+	/* KEY 1: Ensure image scales height to 100%, and width auto-adjusts (no distortion) */
+	background-size: auto 100%;
+
+	/* KEY 2: Prevent tiling/repeating (we rely on the image's inherent width) */
+	background-repeat: repeat;
+	image-rendering: pixelated;
+
+	background-position-y: bottom;
+
+	/* Apply the animation to the background position */
+	animation: slide-left 50s linear infinite; /* Adjust duration for speed */
+}

@@ -1,24 +1,26 @@
 import https from "node:https";
-import { app, type BrowserWindow } from "electron";
+import { app, type BrowserWindow, type IpcMain, ipcMain } from "electron";
 import log from "electron-log/main";
 import fs from "fs";
 import path from "path";
-import unzipper from "unzipper";
 import { extract } from "zip-lib";
 
 const defaultConfig = {
-	channelName: "download-status-2",
+	reporterChannelName: "download-status-2",
+	handlerChannelName: "download-file",
 	dataFolderName: "doomdash-data",
 };
 
 type IFileDownloaderConfig = {
-	channelName: string;
+	reporterChannelName: string;
+	handlerChannelName: string;
 	dataFolderName: string;
 };
 
-type IDownload = {
+export type IDownload = {
 	url: string;
 	targetFilename?: string;
+	window?: BrowserWindow;
 };
 
 export type IIpcStatusMessage = {
@@ -31,9 +33,9 @@ export type IIpcStatusMessage = {
 
 export class FileDownloader {
 	constructor(
-		private window: BrowserWindow,
 		private getAppPath: () => string = getAppBundlePath,
 		private config: IFileDownloaderConfig = defaultConfig,
+		private ipc: IpcMain = ipcMain,
 	) {}
 
 	/**
@@ -41,7 +43,11 @@ export class FileDownloader {
 	 * @param url
 	 * @param dest
 	 */
-	async download({ url, targetFilename }: IDownload) {
+	async download({ url, targetFilename, window }: IDownload): Promise<string> {
+		if (!window)
+			log.info(
+				"window not passed to FileDownloader.download(). Reporting will not work",
+			);
 		return new Promise((resolve, reject) => {
 			const filename = targetFilename || path.basename(new URL(url).pathname);
 			const dest = `${app.getPath("desktop")}/${this.config.dataFolderName}/`;
@@ -68,7 +74,11 @@ export class FileDownloader {
 					if (redirectUrl) {
 						file.destroy();
 						// Recursively call handleDownload with the redirect URL
-						this.download({ url: redirectUrl, targetFilename: filename })
+						this.download({
+							url: redirectUrl,
+							targetFilename: filename,
+							window,
+						})
 							.then(resolve)
 							.catch(reject);
 						return;
@@ -98,21 +108,24 @@ export class FileDownloader {
 				response.pipe(file);
 
 				// Track download progress
-				response.on("data", (chunk: Buffer) => {
-					downloadedSize += chunk.length;
+				if (window)
+					response.on("data", (chunk: Buffer) => {
+						downloadedSize += chunk.length;
 
-					const percentage =
-						totalSize > 0 ? (downloadedSize / totalSize) * 100 : 0;
-					// console.log("downloaded:", downloadedSize )
-					const message: IIpcStatusMessage = {
-						filename,
-						status: "downloading",
-						totalSize,
-						downloaded: downloadedSize,
-						percentage: percentage.toFixed(2),
-					};
-					this.window.webContents.send(this.config.channelName, message);
-				});
+						const percentage =
+							totalSize > 0 ? (downloadedSize / totalSize) * 100 : 0;
+						// console.log("downloaded:", downloadedSize )
+						const message: IIpcStatusMessage = {
+							filename,
+							status: "downloading",
+							totalSize,
+							downloaded: downloadedSize,
+							percentage: percentage.toFixed(2),
+						};
+						if (window && !window.isDestroyed()) {
+							window.webContents.send(this.config.reporterChannelName, message);
+						}
+					});
 
 				// Handle stream completion
 				file.on("finish", () => {
@@ -123,9 +136,10 @@ export class FileDownloader {
 						downloaded: downloadedSize,
 						percentage: "100",
 					};
-					file.close(() => {
-						this.window.webContents.send(this.config.channelName, message);
-						unzipFile(tempDirectory, dest);
+					file.close(async () => {
+						if (window && !window.isDestroyed())
+							window.webContents.send(this.config.reporterChannelName, message);
+						await unzipFile(tempDirectory, dest);
 						const uzdoomAppPath = path.join(dest, "uzdoom.app");
 						grantExecutePermission(uzdoomAppPath);
 						resolve(uzdoomAppPath);
@@ -154,6 +168,19 @@ export class FileDownloader {
 				reject(new Error("Download timed out"));
 			});
 		});
+	}
+	register(mainWindow: BrowserWindow) {
+		this.ipc.handle(
+			this.config.handlerChannelName,
+			async (_event, downloadArgs: Omit<IDownload, "window">) => {
+				try {
+					await this.download({ ...downloadArgs, window: mainWindow });
+				} catch (error) {
+					console.error("Download failed:", error);
+					return (error as Error).message;
+				}
+			},
+		);
 	}
 }
 
