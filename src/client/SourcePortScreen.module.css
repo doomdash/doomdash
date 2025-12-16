@@ -34,5 +34,5 @@
 	background-position-y: bottom;
 
 	/* Apply the animation to the background position */
-	animation: slide-left 10s linear infinite; /* Adjust duration for speed */
+	animation: slide-left 150s linear infinite; /* Adjust duration for speed */
 }

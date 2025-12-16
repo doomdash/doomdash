@@ -1,4 +1,4 @@
-name: 🖥️ Windows Electron Build (using pnpm)
+name: 🖥️ Multi-Platform Electron Build (using pnpm)
 
 on:
   push:
@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
 
 jobs:
+  # --- Windows Build Job ---
   build_windows:
     runs-on: windows-latest
-    
     steps:
       - name: 1. ⬇️ Checkout Repository
         uses: actions/checkout@v4
@@ -17,27 +17,49 @@ jobs:
       - name: 2. ⚙️ Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20 # Switched back to 20, as it's the current LTS (LTS is generally safer for production builds)
+          node-version: 24
 
       - name: 3. 🛠️ Install pnpm
-        # We must explicitly install pnpm globally on the runner before we can use it
         run: npm install -g pnpm
 
       - name: 4. 📦 Install Dependencies (pnpm)
-        # --frozen-lockfile is the CI-recommended way to ensure dependency integrity
         run: pnpm install --frozen-lockfile
 
       - name: 5. 🔨 Run Electron Forge 'make' (pnpm)
-        # Executes the 'make' script defined in package.json using pnpm
         run: pnpm run make
 
-      # --- 6. Uploading the Artifacts ---
       - name: 6. ⬆️ Upload Windows Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Windows-Installer-Files
           path: out/make/
           retention-days: 30
-          
-  # The 'create_release' job is currently commented out, 
-  # but your setup is otherwise correct for a 'prototype' branch build.
+
+  # --- macOS Build Job ---
+  build_mac:
+    runs-on: macos-latest
+    steps:
+      - name: 1. ⬇️ Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 2. ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: 3. 🛠️ Install pnpm
+        run: npm install -g pnpm
+
+      - name: 4. 📦 Install Dependencies (pnpm)
+        run: pnpm install --frozen-lockfile
+
+      - name: 5. 🔨 Run Electron Forge 'make' (pnpm)
+        # Note: Forge will automatically detect macOS and build .dmg/.zip based on your forge.config.js
+        run: pnpm run make
+
+      - name: 6. ⬆️ Upload macOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: MacOS-Installer-Files
+          path: out/make/
+          retention-days: 30
