@@ -1,15 +1,13 @@
 import { contextBridge, type IpcRendererEvent, ipcRenderer } from "electron";
-import type {
-	IDownload,
-	IIpcStatusMessage,
-} from "./main/file-downloader/FileDownloader";
+import type { IIpcStatusMessage } from "./main/file-downloader/FileDownloader";
 
 const electronAPI: Window["electron"] = {
 	platform: process.platform,
 	downloadSourcePort: (url: string) =>
 		ipcRenderer.invoke("download-source-port", url),
-	handleDownload: (downloadArgs: Omit<IDownload, "window">) =>
-		ipcRenderer.invoke("download-file", downloadArgs),
+	handleDownloadUzdoom: (downloadablePackage) =>
+		ipcRenderer.invoke("download-gzdoom", downloadablePackage),
+	handleStart: (game) => ipcRenderer.invoke("start-game", game),
 	onDownload: (callback) => {
 		const downloadHandler = (
 			_event: IpcRendererEvent,

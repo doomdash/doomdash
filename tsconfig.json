@@ -12,7 +12,9 @@
     "moduleResolution": "node",
     "jsx":"react-jsx",
     "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
     "paths": {
+        
       "*": ["node_modules/*"]
     }
   },

@@ -5,6 +5,7 @@ import fs from "fs";
 import path from "path";
 import { extract } from "zip-lib";
 
+const scopeLog = log.scope("FileDownloader");
 const defaultConfig = {
 	reporterChannelName: "download-status-2",
 	handlerChannelName: "download-file",
@@ -20,6 +21,7 @@ type IFileDownloaderConfig = {
 export type IDownload = {
 	url: string;
 	targetFilename?: string;
+	targetDirectory: string;
 	window?: BrowserWindow;
 };
 
@@ -43,40 +45,33 @@ export class FileDownloader {
 	 * @param url
 	 * @param dest
 	 */
-	async download({ url, targetFilename, window }: IDownload): Promise<string> {
+	download = async ({
+		url,
+		targetFilename,
+		targetDirectory,
+		window,
+	}: IDownload): Promise<string> => {
 		if (!window)
-			log.info(
-				"window not passed to FileDownloader.download(). Reporting will not work",
-			);
+			scopeLog.info("`window` not provided. IPC Reporting will not work.");
+		scopeLog.info(`url: ${url}`);
+
 		return new Promise((resolve, reject) => {
 			const filename = targetFilename || path.basename(new URL(url).pathname);
-			const dest = `${app.getPath("desktop")}/${this.config.dataFolderName}/`;
-			const tempDirectory = path.join(app.getPath("temp"), filename);
-			console.log("tempDir", tempDirectory);
-			log.info(`tempDir ${tempDirectory}`);
-			console.log("directory", dest);
-			log.info(`directory ${dest}`);
-			// 1. Check if destination directory exists. If not, create it.
-			if (!fs.existsSync(dest)) {
-				try {
-					fs.mkdirSync(dest, { recursive: true });
-				} catch (err) {
-					return reject(new Error(`Could not create directory: ${dest}`));
-				}
-			}
-			// const dest = path.join(directory, filename);
-			const file = fs.createWriteStream(tempDirectory);
+			const targetPath = path.join(targetDirectory, filename);
+			const file = fs.createWriteStream(targetPath);
 
 			// 3. Start the request
 			const request = https.get(url, (response) => {
 				if (response.statusCode === 301 || response.statusCode === 302) {
 					const redirectUrl = response.headers.location;
+					scopeLog.info(`redirectUrl: ${redirectUrl}`);
 					if (redirectUrl) {
 						file.destroy();
 						// Recursively call handleDownload with the redirect URL
 						this.download({
-							url: redirectUrl,
+							url: redirectUrl, // it keeps forever looping with initial url, not redirected!!
 							targetFilename: filename,
+							targetDirectory,
 							window,
 						})
 							.then(resolve)
@@ -87,7 +82,6 @@ export class FileDownloader {
 
 				if (response.statusCode !== 200) {
 					file.destroy();
-					fs.unlink(dest, () => {});
 					reject(
 						new Error(
 							`Failed to download file: ${response.statusCode} ${response.statusMessage}`,
@@ -139,17 +133,15 @@ export class FileDownloader {
 					file.close(async () => {
 						if (window && !window.isDestroyed())
 							window.webContents.send(this.config.reporterChannelName, message);
-						await unzipFile(tempDirectory, dest);
-						const uzdoomAppPath = path.join(dest, "uzdoom.app");
-						grantExecutePermission(uzdoomAppPath);
-						resolve(uzdoomAppPath);
+						scopeLog.debug("File downloaded to:", targetPath);
+						resolve(targetPath);
 					});
 				});
 
 				// Handle stream errors (e.g., disk full, permission denied)
 				file.on("error", (err) => {
 					file.close();
-					fs.unlink(dest, () => {}); // Delete partial file
+					fs.unlink(targetPath, () => {}); // Delete partial file
 					reject(err);
 				});
 			});
@@ -157,18 +149,18 @@ export class FileDownloader {
 			// Handle request errors (e.g., DNS issues, no internet)
 			request.on("error", (err) => {
 				file.close();
-				fs.unlink(dest, () => {}); // Delete partial file
+				fs.unlink(targetPath, () => {}); // Delete partial file
 				reject(err);
 			});
 
 			request.setTimeout(30000, () => {
 				request.destroy();
 				file.close();
-				fs.unlink(dest, () => {});
+				fs.unlink(targetPath, () => {});
 				reject(new Error("Download timed out"));
 			});
 		});
-	}
+	};
 	register(mainWindow: BrowserWindow) {
 		this.ipc.handle(
 			this.config.handlerChannelName,
@@ -248,8 +240,6 @@ async function grantExecutePermission(appBundlePath: string): Promise<void> {
 		);
 	}
 
-	// 3. Grant read/write/execute permissions (0o755 or 0o777)
-	// 0o755 is generally safe: User: rwx, Group/Other: rx
 	try {
 		await fs.promises.chmod(executablePath, 0o755);
 		console.log(`Successfully set execute permission for: ${executablePath}`);

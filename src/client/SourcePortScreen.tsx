@@ -33,7 +33,7 @@ function SourcePortScreen() {
 			const handleDownloadFinished = () => {
 				setStep(2);
 			};
-			title = "Select Source Port";
+			title = "Select Source Port (game engine)";
 			grid = (
 				<SourcePortSelector
 					key="step1"
@@ -43,8 +43,18 @@ function SourcePortScreen() {
 			break;
 		}
 		case 2: {
-			title = "Select Source Port";
-			grid = <IWadSelector key="step2" />;
+			const handleDownloadFinished = () => {
+				setStep(3);
+			};
+			title = "Select Core Game (iwad)";
+			grid = (
+				<IWadSelector key="step2" onDownloadFinished={handleDownloadFinished} />
+			);
+			break;
+		}
+		case 3: {
+			title = "Game Library";
+			grid = <GameSelector key="step3" />;
 			break;
 		}
 	}
@@ -81,9 +91,7 @@ function SourcePortSelector({ onDownloadFinished }: ScreenProps) {
 	const handleDownloadSourcePort = async () => {
 		console.log("handleDownloadSourcePort");
 		try {
-			await window.electron.handleDownload({
-				url: "https://github.com/UZDoom/UZDoom/releases/download/4.14.3/macOS-UZDoom-4.14.3.zip",
-			});
+			await window.electron.handleDownloadUzdoom("uzdoom");
 			onDownloadFinished();
 		} catch (error) {
 			console.error("Download failed:", error);
@@ -93,7 +101,6 @@ function SourcePortSelector({ onDownloadFinished }: ScreenProps) {
 	useEffect(() => {
 		// Set up progress listener
 		const unsubscribeProgress = window.electron.onDownload(({ percentage }) => {
-			console.log("Progress update:", percentage);
 			setPercentage(Number(percentage));
 		});
 
@@ -140,7 +147,31 @@ function SourcePortSelector({ onDownloadFinished }: ScreenProps) {
 		</motion.div>
 	);
 }
-function IWadSelector() {
+
+function IWadSelector({ onDownloadFinished }: ScreenProps) {
+	const [percentage, setPercentage] = useState(0);
+
+	const handleDownload = async () => {
+		try {
+			await window.electron.handleDownloadUzdoom("freedoom");
+			onDownloadFinished();
+		} catch (error) {
+			console.error("Download failed:", error);
+		}
+	};
+
+	useEffect(() => {
+		// Set up progress listener
+		const unsubscribeProgress = window.electron.onDownload(({ percentage }) => {
+			setPercentage(Number(percentage));
+		});
+
+		// Clean up listeners
+		return () => {
+			unsubscribeProgress();
+		};
+	}, []);
+
 	return (
 		<motion.div
 			variants={slideVariants} // Use the variants
@@ -156,12 +187,54 @@ function IWadSelector() {
 				subheader="Freedoom"
 				description="Free alternative version of doom.
 While having a distinct visuals and levels, provides the same gameplay mechanics "
-				actions={<Button text="Install" />}
+				actions={
+					<Button
+						text={`${percentage !== 0 ? `Downloading [${percentage} %]` : "Install"}`}
+						onClick={handleDownload}
+					/>
+				}
 			/>
 			<ContentContainer
 				header="Other"
 				subheader="Original doom or other games"
 				actions={<p>Not implemented</p>}
+			/>
+		</motion.div>
+	);
+}
+
+function GameSelector() {
+	const handleStart = async (game: "freedoom-1" | "freedoom-2") => {
+		try {
+			await window.electron.handleStart(game);
+		} catch (error) {
+			console.error("start failed:", error);
+		}
+	};
+
+	return (
+		<motion.div
+			variants={slideVariants} // Use the variants
+			initial="initial" // Set initial state
+			animate="animate" // Set animate state
+			exit="exit" // Set exit state
+			className={
+				"absolute inset-0 grid w-full p-4 h-full gap-4 items-start grid-cols-3"
+			}
+		>
+			<ContentContainer
+				header="Freedoom Episode 1"
+				subheader="No mods"
+				actions={
+					<Button text="Start" onClick={() => handleStart("freedoom-1")} />
+				}
+			/>
+			<ContentContainer
+				header="Freedoom Episode 2"
+				subheader="No mods"
+				actions={
+					<Button text="Start" onClick={() => handleStart("freedoom-2")} />
+				}
 			/>
 		</motion.div>
 	);
