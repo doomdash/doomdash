@@ -1,3 +1,5 @@
+<img width="1122" height="754" alt="DoomDash screenshot" src="https://github.com/user-attachments/assets/1f19a37b-2b67-4806-bafe-4cd0178a5696" />
+
 Small prototype was developed. You can play Freedoom with it
 
 [Download prototype](https://github.com/doomdash/doomdash/releases/tag/0.0.1-prototype) (macos + windows)
