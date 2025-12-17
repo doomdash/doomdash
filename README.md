@@ -16,4 +16,6 @@ and [GZDeck](https://github.com/flegald/GZDeck) launchers.
 ## Project status
 The project is on the very early stage. I'm trying to test my idea and find the buddies who will join this project. Read about my idea in the detail in this gist: https://gist.github.com/skorphil/51e6eaaa1401eec81937aa7ff74c8c92
 
-The ideas and feedback are highly appreciated.
+The ideas and feedback are highly appreciated. Create issues for that.
+
+The vision and philosophy are captured in wiki. For exaple, I drafted [UX Principles proposal](https://github.com/doomdash/doomdash/wiki/UX-Principles-proposal)
