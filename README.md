@@ -4,7 +4,11 @@ Small prototype was developed. You can play Freedoom with it
 
 [Download prototype](https://github.com/doomdash/doomdash/releases/tag/0.0.1-prototype) (macos + windows)
 
+*Prototype's source code available on `prototype` branch.
+
 [YouTube demo](https://youtu.be/lof4aaNsKwc?si=iUNP20FwoAwCeSP9)
+
+
 
 **DoomDash** is a wad/source port launcher for quick start. Its design goal is to 
 be simple for use by gamers, who are new to wad landscape.
